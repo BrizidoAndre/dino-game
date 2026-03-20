@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="styles.css">
+    <title>Dino game</title>
+</head>
+<body>
+<h1>Points <span id="point">0</span></h1>
+<div class="container">
+    <canvas id="canvas">
+
+    </canvas>
+    <img src="images/pngegg.png" alt="" id="dino" class="d-none">
+</div>
+<script src="Entity.js"></script>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const dinoImage = document.getElementById('dino');
+
+    const WIDTH = canvas.width;
+    const HEIGHT = canvas.height;
+    let dino;
+    let dinoFloor;
+    let points = 0;
+    let xSpeed = .5;
+    let velocity = 0; // current y velocity
+    let gravity = .05; // a constant force moving to the floor
+    let jumpStrength = -2.5; //negative because the negative value are moving upward
+    let obstacles = [];
+    let over = false;
+    let canJump = true;
+    const colors = [
+        'lime',
+        'blue',
+        'gold',
+        'paleturquoise',
+        'blueviolet',
+        'silver',
+        'maroon',
+        'plum'
+    ];
+
+
+    function pressKey(ev) {
+        let {key} = ev;
+        if (key === 'ArrowUp' || key === ' ' && canJump) {
+            velocity = jumpStrength // giving a big upward boost
+            canJump = false;
+        } else if (key === 'ArrowDown') {
+        }
+    }
+
+    function createCommands() {
+        window.addEventListener('keydown', pressKey)
+    }
+
+    function createDino() {
+        dino = new Entity(20, 80, 15, 20);
+        dinoFloor = dino.y + dino.height;
+    }
+
+    function moveDino() {
+        // apply gravity to current y velocity
+        velocity += gravity;
+        // apply velocity to the dino's y position
+        dino.y += velocity;
+        if (dino.y > 80) {
+            dino.y = 80;
+            velocity = 0;
+            canJump = true;
+        }
+    }
+
+    function renderDino() {
+        ctx.drawImage(dinoImage, dino.x, dino.y, dino.width, dino.height);
+    }
+
+    function createObstacles() {
+        for (let i = 0; i < 100; i++) {
+            obstacles.push(new Entity(dino.x + 300 + (200 * i), dino.y + 10, 10, 10, colors[i % colors.length]))
+        }
+    }
+
+    function renderObstacles() {
+        obstacles = obstacles.filter(obstacle => {
+            // moving
+            obstacle.x -= xSpeed;
+            // is out of screen?
+            if (obstacle.right < 0) {
+                gainPoint()
+                return false;
+            }
+            // rendering
+            ctx.fillStyle = obstacle.color;
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            // checking if hit
+            if (
+                obstacle.left < dino.right
+                && obstacle.right > dino.left
+                && obstacle.top < dino.bottom
+            ) {
+                gameOver()
+            }
+            return true;
+        })
+    }
+
+    function gainPoint() {
+        points++;
+        point.innerHTML = points;
+    }
+
+    function checkHit(obj) {
+
+    }
+
+    function renderFloor() {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(0, dinoFloor, WIDTH, HEIGHT)
+    }
+
+    function nextTick() {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        moveDino()
+        renderDino()
+        renderObstacles();
+        renderFloor()
+        checkHit()
+        if (!over) window.requestAnimationFrame(nextTick);
+    }
+
+    function gameStart() {
+        createDino();
+        createObstacles();
+        nextTick();
+        createCommands()
+    }
+
+    function gameOver() {
+        if (!over) {
+            alert('game over')
+            window.location.reload();
+        }
+        over = true;
+    }
+
+    gameStart()
+</script>
+</body>
+</html>
